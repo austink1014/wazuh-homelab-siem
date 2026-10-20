@@ -79,7 +79,7 @@ To change the password, we need to put our passwords in plaintext in the docker-
 
 In the uploaded docker-compose.example.yml, these fields have `<PLEASE-CHANGE-ME>`
 
-To generate a hash for our new password, we can use the provided hash function in the docker container
+To generate a hash for our new password, we can use the provided bcrypt hash function in the docker container
 ```
 docker run --rm -ti wazuh/wazuh-indexer:4.14.9 bash /usr/share/wazuh-indexer/plugins/opensearch-security/tools/hash.sh
 ```
