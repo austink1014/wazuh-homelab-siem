@@ -86,7 +86,7 @@ docker run --rm -ti wazuh/wazuh-indexer:4.14.9 bash /usr/share/wazuh-indexer/plu
 
 Copy the hash and insert it into the admin hash section of the `internal_users.yml`. 
 
-Access the container with `docker exec -it <CONTAINER_NAME> bash`
+Access the container with `docker exec -it <INDEXER_CONTAINER_NAME> bash`
 
 Set the following environmental variables
 ```
