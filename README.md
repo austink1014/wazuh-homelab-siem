@@ -103,3 +103,24 @@ After a couple minutes you can run the `securityadmin.sh` script to apply the pa
 bash /usr/share/wazuh-indexer/plugins/opensearch-security/tools/securityadmin.sh -cd $CONFIG_DIR/opensearch-security/ -nhnv -cacert  $CACERT -cert $CERT -key $KEY -p 9200 -icl
 ```
 Doing this one at a time, we can change the passwords of all internal users.
+
+# Exercises
+## Cracking SSH
+I used `hydra` to brute force the SSH password of a local target box (VM) on my home network. 
+
+First, I installed a Wazuh agent on the target box
+<img width="914" height="962" alt="Screenshot_20261024_163310" src="https://github.com/user-attachments/assets/c9812662-6d93-450e-80fa-f309a191e9a2" />
+
+<img width="936" height="927" alt="Screenshot_20261024_163605" src="https://github.com/user-attachments/assets/77d5c3a4-c191-43d6-8748-937a9f299d12" />
+
+We can verify that the agent was installed on the agents screen.
+<img width="922" height="287" alt="Screenshot_20261024_164214" src="https://github.com/user-attachments/assets/560c474d-f181-4416-8250-a964c1ac0aeb" />
+
+Then I used `hydra` with the `rockyou.txt` wordlist to attempt to crack the target boxes SSH password
+(Note, I used -t 4 flag after this screenshot so that it wasn't so aggressive)
+<img width="859" height="299" alt="Screenshot_20261024_164444" src="https://github.com/user-attachments/assets/f207a1bf-d1fe-44b2-b55e-fe80cfc3cd6d" />
+
+On the threat hunting screen, we can see the results of the `hydra` attack. We can see from the MITRE ATTACKS pie chart that all of the attacks were SSH, password guessing, and brute force
+
+<img width="934" height="1016" alt="Screenshot_20261024_164631" src="https://github.com/user-attachments/assets/5d402594-8d35-4eb2-b8d7-e2b2520ae3b9" />
+
