@@ -48,12 +48,12 @@ I cloned the repository using `git clone https://github.com/wazuh/wazuh-docker.g
 
 Each node needs a signed x509 certificate, the `wazuh-certs-generator.yml` file provides a convenient docker image for generating Wazuh self-signed certificates. The certificates are stored in `wazuh-docker/single-node/config/wazuh_indexer_ssl_certs`
 
-```
+```bash
 docker compose -f generate-indexer-certs.yml run --rm generator
 ```
 
 We can throw it up real quick and login using default credentials just to test that it's up.
-```
+```bash
 sudo docker compose up -d
 ```
 We can check if they are up and running using `docker ps`
@@ -80,7 +80,7 @@ To change the password, we need to put our passwords in plaintext in the docker-
 In the uploaded docker-compose.example.yml, these fields have `<PLEASE-CHANGE-ME>`
 
 To generate a hash for our new password, we can use the provided bcrypt hash function in the docker container
-```
+```bash
 docker run --rm -ti wazuh/wazuh-indexer:4.14.9 bash /usr/share/wazuh-indexer/plugins/opensearch-security/tools/hash.sh
 ```
 
@@ -89,7 +89,7 @@ Copy the hash and insert it into the admin hash section of the `internal_users.y
 Access the container with `docker exec -it <INDEXER_CONTAINER_NAME> bash`
 
 Set the following environmental variables
-```
+```bash
 export INSTALLATION_DIR=/usr/share/wazuh-indexer
 export CONFIG_DIR=$INSTALLATION_DIR/config
 CACERT=$CONFIG_DIR/certs/root-ca.pem
@@ -99,7 +99,7 @@ export JAVA_HOME=/usr/share/wazuh-indexer/jdk
 ```
 
 After a couple minutes you can run the `securityadmin.sh` script to apply the password change.
-```
+```bash
 bash /usr/share/wazuh-indexer/plugins/opensearch-security/tools/securityadmin.sh -cd $CONFIG_DIR/opensearch-security/ -nhnv -cacert  $CACERT -cert $CERT -key $KEY -p 9200 -icl
 ```
 Doing this one at a time, we can change the passwords of all internal users.
@@ -124,3 +124,37 @@ On the threat hunting screen, we can see the results of the `hydra` attack. We c
 
 <img width="934" height="1016" alt="Screenshot_20261024_164631" src="https://github.com/user-attachments/assets/5d402594-8d35-4eb2-b8d7-e2b2520ae3b9" />
 
+## File Integrity Monitoring
+I configured the Wazuh agent to monitor two directories in real time by adding the following lines in `/var/osssec/etc/ossec.conf` on the target box. Don't forget to restart the service after.
+```
+  <directories realtime="yes">/etc</directories>
+  <directories realtime="yes">/home/labuser</directories>
+```
+
+First, i created, modified, and removed a test file to set if the integrity monitoring was active
+<img width="731" height="171" alt="Screenshot_20261025_141606" src="https://github.com/user-attachments/assets/bce588ba-f696-4c89-8380-14597ada37ff" />
+
+We can see the events in the logs, and even look at the hash digests between modifications
+<img width="1918" height="612" alt="Screenshot_20261025_141933" src="https://github.com/user-attachments/assets/c80da6d8-fffc-4aa1-a8e2-2a20a07036ee" />
+<img width="745" height="225" alt="modify_diff" src="https://github.com/user-attachments/assets/fc8dda88-3b88-4916-817f-8e18d4d1f35e" />
+
+### Editing /etc/shadow and /etc/passwd
+An example of what would actually be worth considering escalating is a change in a vulnerable file. For this example I'm using `/etc/shadow` and `/etc/passwd`
+
+I created a test user, a password for the test user, and deleted the test user.
+```bash
+sudo useradd -m test
+sudo passwd test
+sudo userdel -r test
+```
+
+We can see when a user was created, how many bytes were added to the file, the diff, and who did the change (root).
+<img width="725" height="366" alt="adduserpasswd" src="https://github.com/user-attachments/assets/35492d77-b5e5-4f85-8412-0527f6c4ea7e" />
+
+We can decide if this is worth escalation depending on the UID/GID range and group membership of the new user
+```bash
+sudo id test
+uid=1001(test) gid=1001(test) groups=1001(test)
+```
+
+We can confirm that this user has no sudo/wheel membership, and a non-zero system UID. We can say that this is a normal account rather than a privilege escalation attempt. If the UID was 0, or it was a UID from an existing account, then we can escalate and take action.
